@@ -24,12 +24,9 @@ app.use(
 app.use(express.json());
 
 // Server-side Secret & Token Verification
-// No hardcoded fallback: an unset SERVER_SECRET gets a random per-process value instead of a
-// value anyone reading the (public) source could use to forge admin tokens. On a normal
-// long-running server this only breaks sessions across a restart. On Vercel specifically,
-// each serverless invocation can get a fresh, isolated process — an unset SERVER_SECRET
-// there means a token signed by one invocation may fail to verify on the next, causing
-// admin login to work inconsistently. Set SERVER_SECRET as a real env var on Vercel.
+// No hardcoded fallback: an unset SERVER_SECRET gets a random per-boot value instead of a
+// value anyone reading the (public) source could use to forge admin tokens. The only
+// downside is admin sessions won't survive a restart unless SERVER_SECRET is set for real.
 const SERVER_SECRET = process.env.SERVER_SECRET || crypto.randomBytes(32).toString("hex");
 
 function generateAdminToken(): string {
@@ -162,16 +159,9 @@ ${items}
 
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
-// On Vercel, this file is imported by api/index.ts as a serverless function handler —
-// Vercel invokes the exported app directly per-request and never calls listen(). Guarded
-// so `npm run dev`/`tsx server.ts` still works as a normal long-running server locally.
-if (!process.env.VERCEL) {
-  app.listen(PORT, () => {
-    console.log(`Simplify Daily backend API running on port ${PORT}`);
-  });
-}
-
-export default app;
+app.listen(PORT, () => {
+  console.log(`Simplify Daily backend API running on port ${PORT}`);
+});
 
 // Static pool of stories the admin "Sync" buttons pick from — kept at the bottom since it's
 // long; see the frontend repo's src/data/articles.ts for the full seed article set.
