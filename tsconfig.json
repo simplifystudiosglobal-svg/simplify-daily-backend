@@ -11,5 +11,5 @@
     "noEmit": true,
     "strict": true
   },
-  "include": ["server.ts", "data/**/*.ts"]
+  "include": ["server.ts", "data/**/*.ts", "api/**/*.ts"]
 }

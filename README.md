@@ -1,6 +1,8 @@
 # Simplify Daily — Backend
 
-Express API for [Simplify Daily](https://github.com/simplifystudiosglobal-svg/simplify-daily-news-portal): admin auth, the auto-news sync endpoint, and the `/rss.xml` feed. Pairs with the `simplify-daily-frontend` repo, which is a separate static site that calls this API.
+Express API for Simplify Daily: admin auth, the auto-news sync endpoint, and the `/rss.xml` feed. Pairs with the `simplify-daily-frontend` repo, which is a separate static site that calls this API.
+
+Runs as a Vercel serverless function in production (`api/index.ts` exports the Express `app`; `vercel.json` routes every path to it) and as a normal long-running server locally (`npm run dev`).
 
 ## Endpoints
 
@@ -16,12 +18,17 @@ Express API for [Simplify Daily](https://github.com/simplifystudiosglobal-svg/si
 2. Copy `.env.example` to `.env` and fill in `ADMIN_PASSCODE` and `SERVER_SECRET`
 3. `npm run dev` — runs on `http://localhost:3001` by default
 
-## Deploy (e.g. Render free tier)
+## Deploy (Vercel)
 
-- Build command: `npm install && npm run build`
-- Start command: `npm run start`
-- Set environment variables: `ADMIN_PASSCODE`, `SERVER_SECRET`, `FRONTEND_ORIGIN` (your deployed frontend's URL, for CORS)
-- Render assigns `PORT` automatically — no need to set it
+1. Import this repo as its own Vercel project (separate from the frontend's project).
+2. No build command needed — Vercel builds `api/index.ts` as a serverless function automatically.
+3. Set environment variables in the project's Settings → Environment Variables:
+   - `ADMIN_PASSCODE` — required, no fallback
+   - `SERVER_SECRET` — **required in practice on Vercel**, even though the code has a random fallback. Serverless invocations can run in separate, isolated processes; without a fixed `SERVER_SECRET`, a login token signed by one invocation may fail to verify on the next, making admin login flaky. Generate one with `openssl rand -hex 32`.
+   - `FRONTEND_ORIGIN` — your deployed frontend's URL (e.g. `https://simplify-daily-frontend.vercel.app`), for CORS and for building `/rss.xml` links
+4. Deploy. You'll get a URL like `https://simplify-daily-backend.vercel.app` — use that as the frontend's `VITE_API_BASE_URL`.
+
+`PORT` doesn't apply on Vercel (serverless functions don't bind a port) — it's only used by the local `npm run dev` server.
 
 ## Keeping content in sync
 
