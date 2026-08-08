@@ -20,7 +20,7 @@ export const seedArticles: Article[] = [
     "date": "Aug 05, 2026",
     "author": "Entertainment News Bureau",
     "views": "542.8k",
-    "image": "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1200&q=80",
+    "image": "https://res.cloudinary.com/vugydyoc/image/upload/v1785964930/ChatGPT_Image_Aug_5_2026_10_20_51_PM_rmwqmk.png",
     "thumbnailStyle": "breaking",
     "meta": "Famous celebrity blogger Perez Hilton is safe in a Miami hospital following a severe mental health crisis during a live TikTok broadcast on August 4, 2026.",
     "tags": [
