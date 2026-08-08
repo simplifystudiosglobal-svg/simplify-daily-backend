@@ -145,9 +145,9 @@ app.get("/rss.xml", (req, res) => {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
-    <title>Simplify Daily</title>
+    <title>Simplify Feed</title>
     <link>${baseUrl}</link>
-    <description>News, jobs, entertainment, and verified scholarships from Simplify Daily.</description>
+    <description>News, jobs, entertainment, and verified scholarships from Simplify Feed.</description>
     <language>en-us</language>
 ${items}
   </channel>
@@ -160,7 +160,7 @@ ${items}
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
 app.listen(PORT, () => {
-  console.log(`Simplify Daily backend API running on port ${PORT}`);
+  console.log(`Simplify Feed backend API running on port ${PORT}`);
 });
 
 // Static pool of stories the admin "Sync" buttons pick from — kept at the bottom since it's
