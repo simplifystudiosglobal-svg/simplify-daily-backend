@@ -2,12 +2,45 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import crypto from "crypto";
+import fs from "fs";
+import path from "path";
 import { seedArticles } from "./data/articles";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Persisted store for admin-synced articles, so they're visible to every visitor
+// (not just the admin's own browser via localStorage) across every page. Lives at
+// process.cwd() rather than __dirname since esbuild bundles this file into dist/
+// and __dirname there wouldn't be a sensible place to keep runtime data.
+// Caveat: Render's free tier has no persistent disk, so this file survives normal
+// sleep/wake cycles but is wiped on a fresh deploy of this backend. Fine for now;
+// upgrade to a real database if that becomes a problem.
+const DATA_DIR = path.join(process.cwd(), "data-store");
+const PUBLISHED_ARTICLES_FILE = path.join(DATA_DIR, "published-articles.json");
+
+function loadPublishedArticles(): any[] {
+  try {
+    if (!fs.existsSync(PUBLISHED_ARTICLES_FILE)) return [];
+    const raw = fs.readFileSync(PUBLISHED_ARTICLES_FILE, "utf-8");
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    console.error("Failed to read published articles store:", err);
+    return [];
+  }
+}
+
+function savePublishedArticles(articles: any[]): void {
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(PUBLISHED_ARTICLES_FILE, JSON.stringify(articles, null, 2), "utf-8");
+  } catch (err) {
+    console.error("Failed to write published articles store:", err);
+  }
+}
 
 // Only the configured frontend origin(s) may call this API cross-origin. Comma-separated
 // for multiple environments (e.g. a preview deploy + the production frontend domain).
@@ -104,7 +137,33 @@ app.get("/api/auto-news", async (req, res) => {
     thumbnailStyle: art.thumbnailStyle || "breaking",
   }));
 
+  // Persist so these articles are visible to every visitor going forward, not just
+  // stored in the syncing admin's own browser localStorage as before.
+  const existingPublished = loadPublishedArticles();
+  savePublishedArticles([...selected, ...existingPublished]);
+
   return res.json({ success: true, articles: selected, source: "simplify-independent-news-engine" });
+});
+
+// Public — every page (Home, World News, Entertainment) fetches this on load and merges
+// the results with its own build-time seed content, so admin-synced articles show up for
+// all visitors rather than only the browser that ran the sync.
+app.get("/api/articles", (_req, res) => {
+  return res.json({ success: true, articles: loadPublishedArticles() });
+});
+
+// Admin-only removal, since there's no other way to walk back an article once it's
+// been synced and persisted server-side.
+app.delete("/api/admin/articles/:id", (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!verifyAdminToken(authHeader)) {
+    return res.status(401).json({ success: false, error: "Unauthorized" });
+  }
+  const { id } = req.params;
+  const existing = loadPublishedArticles();
+  const filtered = existing.filter((a) => a.id !== id);
+  savePublishedArticles(filtered);
+  return res.json({ success: true, removed: existing.length !== filtered.length });
 });
 
 // RSS feed metadata is derived from the same seed article data the frontend renders,

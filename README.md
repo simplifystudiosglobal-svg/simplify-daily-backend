@@ -6,9 +6,17 @@ Express API for Simplify Daily: admin auth, the auto-news sync endpoint, and the
 
 - `POST /api/admin/login` — passcode → signed session token
 - `GET /api/admin/verify` — validate a session token
-- `GET /api/auto-news?category=...` — admin-only, returns a batch of stories for the "Sync" feature
+- `GET /api/auto-news?category=...` — admin-only, returns a batch of stories for the "Sync" feature, and persists them (see below)
+- `GET /api/articles` — public, returns admin-synced articles persisted server-side. Every frontend page fetches this on load and merges it with its own build-time seed content, so synced articles are visible to all visitors instead of only the browser that ran the sync.
+- `DELETE /api/admin/articles/:id` — admin-only, removes a persisted article
 - `GET /rss.xml` — public RSS feed
 - `GET /health` — health check
+
+### Persisted article storage
+
+Articles returned by `/api/auto-news` are written to `data-store/published-articles.json` on disk (created on first write) and served back via `GET /api/articles`. This makes synced articles visible to every visitor, not just the admin's own browser.
+
+Caveat: Render's free tier has no persistent disk. This file survives normal sleep/wake cycles but is wiped whenever this backend service itself is redeployed. That's an acceptable tradeoff for now — upgrade to a real database (Postgres, etc.) if losing synced articles on a backend redeploy becomes a real problem.
 
 ## Run locally
 
